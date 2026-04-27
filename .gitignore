@@ -1,0 +1,33 @@
+notes.md
+
+# Maven build output
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse / STS
+.classpath
+.project
+.settings/
+.springBeans
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Local secrets — never commit
+application-local.properties
+*.local.properties
+
+# Copilot workspace instructions
+.github/copilot-instructions.md
+
+# Logs
+*.log
+logs/

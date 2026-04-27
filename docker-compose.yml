@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: orderly-postgres
+    environment:
+      POSTGRES_DB: orderly
+      POSTGRES_USER: orderly
+      POSTGRES_PASSWORD: orderly
+    ports:
+      - "5432:5432"
+    volumes:
+      - orderly-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orderly -d orderly"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  orderly-pgdata:
