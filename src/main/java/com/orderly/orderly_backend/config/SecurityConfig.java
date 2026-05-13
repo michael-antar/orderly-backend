@@ -1,17 +1,23 @@
 package com.orderly.orderly_backend.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -20,6 +26,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -60,6 +67,8 @@ public class SecurityConfig {
                 // Validates the JWT on every protected request and populates
                 // SecurityContextHolder so service methods can read the principal
                 .jwt(jwt -> jwt.decoder(jwtDecoder()))
+                // Return the ErrorResponse envelope on 401 instead of Spring's default
+                .authenticationEntryPoint(unauthorizedEntryPoint())
             );
         return http.build();
     }
@@ -106,6 +115,27 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    /**
+     * Returns the ErrorResponse JSON envelope on 401s triggered by Spring Security
+     * (missing, malformed, or expired JWT) so the response matches the OpenAPI spec
+     * instead of Spring's default error format.
+     */
+    @Bean
+    public AuthenticationEntryPoint unauthorizedEntryPoint() {
+        return (HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+                -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write(
+                new ObjectMapper().writeValueAsString(Map.of(
+                    "status", 401,
+                    "error", "UNAUTHORIZED",
+                    "message", "Missing or invalid Bearer token."
+                ))
+            );
+        };
     }
 
     /**
