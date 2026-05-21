@@ -10,6 +10,7 @@ import com.orderly.orderly_backend.auth.dto.PasswordResetRequest;
 import com.orderly.orderly_backend.auth.dto.RegisterRequest;
 import com.orderly.orderly_backend.auth.dto.UserSummary;
 import com.orderly.orderly_backend.exception.EmailAlreadyExistsException;
+import com.orderly.orderly_backend.exception.InvalidCredentialsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -58,7 +59,22 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        User user = userRepository.findByEmailIgnoreCase(request.email()).orElse(null);
+
+        // Check password even when user is null to prevent timing-based email enumeration
+        String hashToCheck = (user != null) ? user.getPasswordHash() : "$2a$10$invalidhashpadding000000000000000000000000000000000000";
+        boolean passwordMatches = passwordEncoder.matches(request.password(), hashToCheck);
+
+        if (user == null || !passwordMatches) {
+            throw new InvalidCredentialsException();
+        }
+
+        AuthTokenResult result = jwtService.issueAuthToken(user);
+        return new AuthResponse(
+                result.token(),
+                result.expiresAt(),
+                new UserSummary(user.getId(), user.getEmail())
+        );
     }
 
     public MessageResponse requestPasswordReset(PasswordResetRequest request) {

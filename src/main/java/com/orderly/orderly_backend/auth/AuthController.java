@@ -1,6 +1,7 @@
 package com.orderly.orderly_backend.auth;
 
 import com.orderly.orderly_backend.auth.dto.AuthResponse;
+import com.orderly.orderly_backend.auth.dto.LoginRequest;
 import com.orderly.orderly_backend.auth.dto.RegisterRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,5 +19,10 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
+    }
+
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 }
