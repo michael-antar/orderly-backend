@@ -78,7 +78,13 @@ public class AuthService {
     }
 
     public MessageResponse requestPasswordReset(PasswordResetRequest request) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        userRepository.findByEmailIgnoreCase(request.email()).ifPresent(user -> {
+            String token = jwtService.issueResetToken(user);
+            emailService.sendPasswordReset(user.getEmail(), token);
+        });
+
+        // Always return the same message to prevent enumeration
+        return new MessageResponse("If an account with that email exists, a password reset link has been sent.");
     }
 
     public MessageResponse confirmPasswordReset(PasswordResetConfirmRequest request) {
