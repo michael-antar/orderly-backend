@@ -11,6 +11,8 @@ import com.orderly.orderly_backend.auth.dto.RegisterRequest;
 import com.orderly.orderly_backend.auth.dto.UserSummary;
 import com.orderly.orderly_backend.exception.EmailAlreadyExistsException;
 import com.orderly.orderly_backend.exception.InvalidCredentialsException;
+import com.orderly.orderly_backend.exception.InvalidResetTokenException;
+import com.nimbusds.jwt.JWTClaimsSet;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -87,8 +89,26 @@ public class AuthService {
         return new MessageResponse("If an account with that email exists, a password reset link has been sent.");
     }
 
+    @Transactional
     public MessageResponse confirmPasswordReset(PasswordResetConfirmRequest request) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        JWTClaimsSet claims = jwtService.parseResetToken(request.token());
+
+        String jti = claims.getJWTID();
+        if (usedResetTokenRepository.existsByJti(jti)) {
+            throw new InvalidResetTokenException();
+        }
+
+        UUID userId = UUID.fromString(claims.getSubject());
+        User user = userRepository.findById(userId)
+                .orElseThrow(InvalidResetTokenException::new);
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        // Mark token as used — atomic with the password update to prevent replay attacks
+        usedResetTokenRepository.save(UsedResetToken.builder().jti(jti).build());
+
+        return new MessageResponse("Password updated successfully.");
     }
 
     public MessageResponse changePassword(ChangePasswordRequest request, UUID userId) {

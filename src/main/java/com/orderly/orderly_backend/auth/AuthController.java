@@ -3,6 +3,7 @@ package com.orderly.orderly_backend.auth;
 import com.orderly.orderly_backend.auth.dto.AuthResponse;
 import com.orderly.orderly_backend.auth.dto.LoginRequest;
 import com.orderly.orderly_backend.auth.dto.MessageResponse;
+import com.orderly.orderly_backend.auth.dto.PasswordResetConfirmRequest;
 import com.orderly.orderly_backend.auth.dto.PasswordResetRequest;
 import com.orderly.orderly_backend.auth.dto.RegisterRequest;
 import jakarta.validation.Valid;
@@ -39,5 +40,10 @@ public class AuthController {
     @PostMapping("/password-reset")
     public MessageResponse requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
         return authService.requestPasswordReset(request);
+    }
+
+    @PostMapping("/password-reset/confirm")
+    public MessageResponse confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
+        return authService.confirmPasswordReset(request);
     }
 }
