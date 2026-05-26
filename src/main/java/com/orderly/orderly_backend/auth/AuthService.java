@@ -10,6 +10,7 @@ import com.orderly.orderly_backend.auth.dto.PasswordResetRequest;
 import com.orderly.orderly_backend.auth.dto.RegisterRequest;
 import com.orderly.orderly_backend.auth.dto.UserSummary;
 import com.orderly.orderly_backend.exception.EmailAlreadyExistsException;
+import com.orderly.orderly_backend.exception.IncorrectPasswordException;
 import com.orderly.orderly_backend.exception.InvalidCredentialsException;
 import com.orderly.orderly_backend.exception.InvalidResetTokenException;
 import com.nimbusds.jwt.JWTClaimsSet;
@@ -111,7 +112,18 @@ public class AuthService {
         return new MessageResponse("Password updated successfully.");
     }
 
+    @Transactional
     public MessageResponse changePassword(ChangePasswordRequest request, UUID userId) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user not found: " + userId));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new IncorrectPasswordException();
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+
+        return new MessageResponse("Password updated successfully.");
     }
 }

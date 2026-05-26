@@ -1,6 +1,7 @@
 package com.orderly.orderly_backend.auth;
 
 import com.orderly.orderly_backend.auth.dto.AuthResponse;
+import com.orderly.orderly_backend.auth.dto.ChangePasswordRequest;
 import com.orderly.orderly_backend.auth.dto.LoginRequest;
 import com.orderly.orderly_backend.auth.dto.MessageResponse;
 import com.orderly.orderly_backend.auth.dto.PasswordResetConfirmRequest;
@@ -9,7 +10,11 @@ import com.orderly.orderly_backend.auth.dto.RegisterRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -45,5 +50,13 @@ public class AuthController {
     @PostMapping("/password-reset/confirm")
     public MessageResponse confirmPasswordReset(@Valid @RequestBody PasswordResetConfirmRequest request) {
         return authService.confirmPasswordReset(request);
+    }
+
+    @PostMapping("/password")
+    public MessageResponse changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return authService.changePassword(request, userId);
     }
 }
