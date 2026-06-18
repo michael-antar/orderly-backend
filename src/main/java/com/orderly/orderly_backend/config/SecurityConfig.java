@@ -1,8 +1,10 @@
 package com.orderly.orderly_backend.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+import javax.crypto.spec.SecretKeySpec;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,10 +25,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.orderly.orderly_backend.exception.ErrorResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -46,7 +49,7 @@ public class SecurityConfig {
      * - JWT validation is delegated to jwtDecoder() below.
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session ->
@@ -68,7 +71,7 @@ public class SecurityConfig {
                 // SecurityContextHolder so service methods can read the principal
                 .jwt(jwt -> jwt.decoder(jwtDecoder()))
                 // Return the ErrorResponse envelope on 401 instead of Spring's default
-                .authenticationEntryPoint(unauthorizedEntryPoint())
+                .authenticationEntryPoint(unauthorizedEntryPoint(objectMapper))
             );
         return http.build();
     }
@@ -123,18 +126,19 @@ public class SecurityConfig {
      * instead of Spring's default error format.
      */
     @Bean
-    public AuthenticationEntryPoint unauthorizedEntryPoint() {
+    public AuthenticationEntryPoint unauthorizedEntryPoint(ObjectMapper objectMapper) {
         return (HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
                 -> {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.getWriter().write(
-                new ObjectMapper().writeValueAsString(Map.of(
-                    "status", 401,
-                    "error", "UNAUTHORIZED",
-                    "message", "Missing or invalid Bearer token."
-                ))
+
+            ErrorResponse error = new ErrorResponse(
+                401, 
+                "UNAUTHORIZED", 
+                "Missing or invalid Bearer token."
             );
+
+            response.getWriter().write(objectMapper.writeValueAsString(error));
         };
     }
 
