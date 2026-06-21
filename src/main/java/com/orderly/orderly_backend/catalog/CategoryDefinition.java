@@ -26,6 +26,7 @@ public class CategoryDefinition {
     @Column(nullable = false)
     private String name;
 
+    /** Mapped and rendered by frontend, we just store it as given */
     private String icon;
 
     @JdbcTypeCode(SqlTypes.JSON)
