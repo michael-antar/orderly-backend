@@ -53,6 +53,12 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(400, "INVALID_RESET_TOKEN", ex.getMessage()));
     }
 
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(ValidationException ex) {
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "VALIDATION_ERROR", ex.getMessage()));
+    }
+
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
